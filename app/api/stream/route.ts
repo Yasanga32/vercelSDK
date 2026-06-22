@@ -9,6 +9,16 @@ export async function POST(req: Request){
             model: google("gemini-2.5-flash"),
             prompt,
         });
+
+        result.usage.then((usage)=>{
+           console.log({
+             inputTokens: usage.inputTokens,
+            outputtokens: usage.outputTokens,
+            totalTokens: usage.totalTokens
+           })
+
+        })
+
         return result.toUIMessageStreamResponse();
 
     }catch(error){
