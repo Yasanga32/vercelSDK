@@ -1,8 +1,4 @@
-import {
-  UIMessage,
-  streamText,
-  convertToModelMessages,
-} from "ai";
+import { UIMessage, streamText, convertToModelMessages } from "ai";
 import { google } from "@ai-sdk/google";
 
 export async function POST(req: Request) {
@@ -13,10 +9,25 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: google("gemini-2.5-flash"),
-      messages: modelMessages,
+      messages: [
+        {
+          role: "system",
+          content: "Convert user questions about React into concise code examples.",
+        },
+        {
+          role: "user",
+          content: "How to toggle a boolean?",
+        },
+        {
+          role: "assistant",
+          content:
+            "const [isOpen, setIsOpen] = useState(false);\n\n<button onClick={() => setIsOpen(!isOpen)}>Toggle</button>",
+        },
+        ...modelMessages,
+      ],
     });
 
-    result.usage.then((usage)=>{
+    result.usage.then((usage) => {
       console.log({
         messageCount: messages.length,
         inputTokens: usage.inputTokens,
@@ -27,7 +38,7 @@ export async function POST(req: Request) {
 
     return result.toUIMessageStreamResponse();
   } catch (error) {
-    console.error(error);
+    console.error("Chat API Error:", error);
 
     return Response.json(
       {
