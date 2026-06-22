@@ -16,6 +16,15 @@ export async function POST(req: Request) {
       messages: modelMessages,
     });
 
+    result.usage.then((usage)=>{
+      console.log({
+        messageCount: messages.length,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+      });
+    });
+
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error(error);
