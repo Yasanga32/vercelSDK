@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     });
 
     return Response.json({
-      transcript: result.text,
+      text: result.text,
     });
   } catch (error) {
     console.error("Transcription Error:", error);
