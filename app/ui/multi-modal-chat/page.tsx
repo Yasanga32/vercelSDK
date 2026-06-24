@@ -60,7 +60,7 @@ export default function MultiModalChatPage() {
                 }
                 if (part.mediaType?.startsWith("application/pdf")) {
                   return (
-                    <iframe
+                    <iframe //this tag for displaying pdf
                       key={`${message.id}-${index}`}
                       src={part.url}
                       width="500"
