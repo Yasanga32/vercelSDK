@@ -12,36 +12,64 @@ import { z } from "zod";
 
 const tools = {
   getWeather: tool({
-    description: "Get the weather for a location",
+    description: "Get the current weather for a city.",
+
     inputSchema: z.object({
       city: z.string().describe("The city to get the weather for"),
     }),
 
+    // ✅ This gives part.output its TypeScript type
+    outputSchema: z.object({
+      location: z.object({
+        name: z.string(),
+        country: z.string(),
+        localtime: z.string(),
+      }),
+      current: z.object({
+        temp_c: z.number(),
+        condition: z.object({
+          text: z.string(),
+          code: z.number(),
+        }),
+      }),
+    }),
+
     execute: async ({ city }) => {
-     const response = await fetch(
-       `http://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${city}`
-     );
-     const data = await response.json();
-     const weatherData = {
-       location: {
-         name: data.location.name,
-         country: data.location.country,
-         localtime: data.location.localtime,
-       },
-       current: {
-         temp_c: data.current.temp_c,
-         condition: {
-          text: data.current.condition.text,
-          code: data.current.condition.code,
-         }
-       }
-     }
-     return weatherData;
-  },
-}),
+      console.log("========== WEATHER TOOL ==========");
+      console.log("CITY:", city);
+
+      const response = await fetch(
+        `http://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${encodeURIComponent(
+          city
+        )}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch weather data.");
+      }
+
+      const data = await response.json();
+
+      return {
+        location: {
+          name: data.location.name,
+          country: data.location.country,
+          localtime: data.location.localtime,
+        },
+        current: {
+          temp_c: data.current.temp_c,
+          condition: {
+            text: data.current.condition.text,
+            code: data.current.condition.code,
+          },
+        },
+      };
+    },
+  }),
 };
 
 export type ChatTools = InferUITools<typeof tools>;
+
 export type ChatMessage = UIMessage<
   never,
   UIDataTypes,
@@ -55,18 +83,8 @@ export async function POST(req: Request) {
     const { messages }: { messages: ChatMessage[] } =
       await req.json();
 
-    console.log(
-      "MESSAGES RECEIVED:",
-      JSON.stringify(messages, null, 2)
-    );
-
     const modelMessages =
       await convertToModelMessages(messages);
-
-    console.log(
-      "MODEL MESSAGES:",
-      JSON.stringify(modelMessages, null, 2)
-    );
 
     const result = streamText({
       model: google("gemini-2.5-flash"),
@@ -74,26 +92,24 @@ export async function POST(req: Request) {
       system: `
 You are a weather assistant.
 
-When the user asks about weather,
+When a user asks about the weather,
 ALWAYS call the getWeather tool.
 
-Never answer weather questions from your own knowledge.
+Never make up weather information.
 
-Use the tool result to generate the final answer.
+Always answer using the tool result.
 `,
 
       messages: modelMessages,
 
       tools,
 
+      // Tool call + Final answer
       stopWhen: stepCountIs(2),
     });
 
-    console.log("STREAM CREATED");
-
     return result.toUIMessageStreamResponse();
   } catch (error) {
-    console.error("========== ERROR ==========");
     console.error(error);
 
     return Response.json(
