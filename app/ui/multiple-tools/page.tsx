@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { ChatMessage } from "@/app/api/tools/route";
+import { ChatMessage } from "@/app/api/multiple-tools/route";
 
-export default function ToolChatPage() {
+export default function MultipleToolsChatPage() {
   const [input, setInput] = useState("");
 
   const { messages, sendMessage, status, error, stop } =
     useChat<ChatMessage>({
       transport: new DefaultChatTransport({
-        api: "/api/tools",
+        api: "/api/multiple-tools",
       }),
     });
 
@@ -43,11 +43,10 @@ export default function ToolChatPage() {
           </div>
 
           <div
-            className={`px-3 py-1 rounded-full text-xs font-medium ${
-              status === "streaming"
+            className={`px-3 py-1 rounded-full text-xs font-medium ${status === "streaming"
                 ? "bg-green-500/20 text-green-400"
                 : "bg-gray-500/20 text-gray-300"
-            }`}
+              }`}
           >
             {status}
           </div>
@@ -62,9 +61,16 @@ export default function ToolChatPage() {
                 <h2 className="text-white text-2xl font-semibold mb-2">
                   Welcome 👋
                 </h2>
+
                 <p className="text-gray-400">
-                  Ask anything to get started.
+                  Try asking:
                 </p>
+
+                <div className="mt-4 space-y-2 text-sm text-gray-300">
+                  <p>Whats the weather in Metropolis?</p>
+                  <p>Whats the weather for Bruce Wayne?</p>
+                  <p>Whats the weather for Clark Kent?</p>
+                </div>
               </div>
             </div>
           )}
@@ -72,21 +78,21 @@ export default function ToolChatPage() {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
-                message.role === "user"
+              className={`flex ${message.role === "user"
                   ? "justify-end"
                   : "justify-start"
-              }`}
+                }`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-lg ${
-                  message.role === "user"
+                className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-lg ${message.role === "user"
                     ? "bg-blue-600 text-white"
                     : "bg-white/10 backdrop-blur-md border border-white/10 text-white"
-                }`}
+                  }`}
               >
                 <div className="mb-2 text-xs uppercase tracking-wider opacity-60">
-                  {message.role === "user" ? "You" : "Assistant"}
+                  {message.role === "user"
+                    ? "You"
+                    : "Assistant"}
                 </div>
 
                 {message.parts.map((part, index) => {
@@ -101,7 +107,7 @@ export default function ToolChatPage() {
                         </div>
                       );
 
-                    case "tool-getWeather":
+                    case "tool-getLocation":
                       switch (part.state) {
                         case "input-streaming":
                           return (
@@ -109,9 +115,9 @@ export default function ToolChatPage() {
                               key={`${message.id}-${index}`}
                               className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4"
                             >
-                              <p className="text-blue-300 font-medium">
-                                Receiving weather request...
-                              </p>
+                              <div className="text-blue-300 font-medium">
+                                📍 Receiving location request...
+                              </div>
 
                               <pre className="mt-2 overflow-x-auto text-xs text-gray-300">
                                 {JSON.stringify(part.input, null, 2)}
@@ -125,12 +131,10 @@ export default function ToolChatPage() {
                               key={`${message.id}-${index}`}
                               className="mt-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4"
                             >
-                              <p className="text-yellow-300">
-                                Fetching weather for{" "}
-                                <span className="font-semibold">
-                                  {part.input.city}
-                                </span>
-                              </p>
+                              <div className="text-yellow-300">
+                                📍 Looking up location for{" "}
+                                <strong>{part.input.name}</strong>...
+                              </div>
                             </div>
                           );
 
@@ -141,7 +145,70 @@ export default function ToolChatPage() {
                               className="mt-3 rounded-2xl border border-green-500/30 bg-green-500/10 p-4"
                             >
                               <div className="text-green-300 font-semibold mb-2">
-                                Weather Result
+                                📍 Location Found
+                              </div>
+
+                              <div className="text-white">
+                                {part.output}
+                              </div>
+                            </div>
+                          );
+
+                        case "output-error":
+                          return (
+                            <div
+                              key={`${message.id}-${index}`}
+                              className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4"
+                            >
+                              <div className="text-red-400">
+                                Error: {part.errorText}
+                              </div>
+                            </div>
+                          );
+
+                        default:
+                          return null;
+                      }
+
+                    case "tool-getWeather":
+                      switch (part.state) {
+                        case "input-streaming":
+                          return (
+                            <div
+                              key={`${message.id}-${index}`}
+                              className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4"
+                            >
+                              <div className="text-blue-300 font-medium">
+                                🌤️ Receiving weather request...
+                              </div>
+
+                              <pre className="mt-2 overflow-x-auto text-xs text-gray-300">
+                                {JSON.stringify(part.input, null, 2)}
+                              </pre>
+                            </div>
+                          );
+
+                        case "input-available":
+                          return (
+                            <div
+                              key={`${message.id}-${index}`}
+                              className="mt-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4"
+                            >
+                              <div className="text-yellow-300">
+                                🌤️ Getting weather for{" "}
+                                <strong>{part.input.city}</strong>...
+                              </div>
+                            </div>
+                          );
+
+                        case "output-available":
+                          return (
+                            <div
+                              key={`${message.id}-${index}`}
+                              className="mt-3 rounded-2xl border border-green-500/30 bg-green-500/10 p-4"
+                            >
+                              <div className="text-green-300 font-semibold mb-2">
+                                🌤️ Weather Result
                               </div>
 
                               <div className="text-white">
@@ -173,20 +240,25 @@ export default function ToolChatPage() {
               </div>
             </div>
           ))}
-
           {status === "streaming" && (
             <div className="flex justify-start">
               <div className="bg-white/10 border border-white/10 rounded-2xl px-5 py-4 text-white">
-                <div className="flex gap-2">
-                  <span className="w-2 h-2 rounded-full bg-white animate-bounce" />
-                  <span
-                    className="w-2 h-2 rounded-full bg-white animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  />
-                  <span
-                    className="w-2 h-2 rounded-full bg-white animate-bounce"
-                    style={{ animationDelay: "0.4s" }}
-                  />
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 rounded-full bg-white animate-bounce" />
+                    <span
+                      className="w-2 h-2 rounded-full bg-white animate-bounce"
+                      style={{ animationDelay: "0.2s" }}
+                    />
+                    <span
+                      className="w-2 h-2 rounded-full bg-white animate-bounce"
+                      style={{ animationDelay: "0.4s" }}
+                    />
+                  </div>
+
+                  <span className="text-sm text-gray-300">
+                    Assistant is thinking...
+                  </span>
                 </div>
               </div>
             </div>
@@ -195,7 +267,7 @@ export default function ToolChatPage() {
 
         {/* Error */}
         {error && (
-          <div className="mx-6 mb-3 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-red-300">
+          <div className="mx-6 mb-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-300">
             {error.message}
           </div>
         )}
@@ -209,27 +281,38 @@ export default function ToolChatPage() {
             <input
               type="text"
               value={input}
-              placeholder="Ask me anything..."
+              placeholder="Ask me about a person's or city's weather..."
               onChange={(e) => setInput(e.target.value)}
-              className="flex-1 rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-white placeholder:text-gray-400 outline-none focus:border-blue-500"
+              className="flex-1 rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-white placeholder:text-gray-400 outline-none transition focus:border-blue-500"
             />
 
             {status === "streaming" ? (
               <button
                 type="button"
                 onClick={() => stop()}
-                className="rounded-2xl bg-red-600 px-6 py-4 text-white font-medium hover:bg-red-700 transition"
+                className="rounded-2xl bg-red-600 px-6 py-4 font-medium text-white transition hover:bg-red-700"
               >
                 Stop
               </button>
             ) : (
               <button
                 type="submit"
-                className="rounded-2xl bg-blue-600 px-8 py-4 text-white font-medium hover:bg-blue-700 transition"
+                className="rounded-2xl bg-blue-600 px-8 py-4 font-medium text-white transition hover:bg-blue-700"
               >
                 Send
               </button>
             )}
+          </div>
+
+          <div className="mt-3 text-xs text-gray-500">
+            Examples:
+            <span className="ml-2 text-gray-400">
+              Whats the weather for Bruce Wayne?
+            </span>
+            <span className="mx-2">•</span>
+            <span className="text-gray-400">
+              Whats the weather in Metropolis?
+            </span>
           </div>
         </form>
       </div>
