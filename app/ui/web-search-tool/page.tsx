@@ -44,8 +44,8 @@ export default function WebSearchToolPage() {
 
           <div
             className={`px-3 py-1 rounded-full text-xs font-medium ${status === "streaming"
-                ? "bg-green-500/20 text-green-400"
-                : "bg-gray-500/20 text-gray-300"
+              ? "bg-green-500/20 text-green-400"
+              : "bg-gray-500/20 text-gray-300"
               }`}
           >
             {status}
@@ -72,14 +72,14 @@ export default function WebSearchToolPage() {
             <div
               key={message.id}
               className={`flex ${message.role === "user"
-                  ? "justify-end"
-                  : "justify-start"
+                ? "justify-end"
+                : "justify-start"
                 }`}
             >
               <div
                 className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-lg ${message.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white/10 backdrop-blur-md border border-white/10 text-white"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white/10 backdrop-blur-md border border-white/10 text-white"
                   }`}
               >
                 <div className="mb-2 text-xs uppercase tracking-wider opacity-60">
@@ -98,6 +98,29 @@ export default function WebSearchToolPage() {
                         </div>
                       );
 
+                    // ---------- Sources ----------
+                    case "source-url":
+                      return (
+                        <div
+                          key={`${message.id}-${index}`}
+                          className="mt-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4"
+                        >
+                          <p className="mb-3 font-semibold text-cyan-300">
+                            🔗 Source
+                          </p>
+
+                          <a
+                            href={part.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="break-all text-cyan-200 underline hover:text-white"
+                          >
+                            {part.title ?? part.url}
+                          </a>
+                        </div>
+                      );
+
+                    // ---------- Web Search ----------
                     case "tool-web_search":
                       switch (part.state) {
                         case "input-streaming":
@@ -106,9 +129,7 @@ export default function WebSearchToolPage() {
                               key={`${message.id}-${index}`}
                               className="mt-3 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4"
                             >
-                              <p className="text-blue-300">
-                                🔍 Preparing web search...
-                              </p>
+                              🔍 Preparing search...
                             </div>
                           );
 
@@ -118,9 +139,7 @@ export default function WebSearchToolPage() {
                               key={`${message.id}-${index}`}
                               className="mt-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4"
                             >
-                              <p className="text-yellow-300">
-                                🌐 Searching Google...
-                              </p>
+                              🌐 Searching Google...
                             </div>
                           );
 
@@ -130,9 +149,7 @@ export default function WebSearchToolPage() {
                               key={`${message.id}-${index}`}
                               className="mt-3 rounded-xl border border-green-500/30 bg-green-500/10 p-4"
                             >
-                              <p className="text-green-300">
-                                ✅ Search complete.
-                              </p>
+                              ✅ Search complete
                             </div>
                           );
 
@@ -142,9 +159,7 @@ export default function WebSearchToolPage() {
                               key={`${message.id}-${index}`}
                               className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4"
                             >
-                              <p className="text-red-300">
-                                {part.errorText}
-                              </p>
+                              {part.errorText}
                             </div>
                           );
 
