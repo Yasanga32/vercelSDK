@@ -2,9 +2,14 @@
 
 import { useState, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport ,lastAssistantMessageIsCompleteWithToolCalls} from "ai";
 import {Image} from "@imagekit/next";
 import type { ChatMessage } from "@/app/api/client-side-tools/route";
+
+function buildTransformationUrl(baseUrl: string, transformation: string):string{
+  const seperator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${seperator}tr=${transformation}`;
+}
 
 export default function ClientSideToolsPage() {
   const [input, setInput] = useState("");
@@ -12,10 +17,33 @@ export default function ClientSideToolsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
-  const { messages, sendMessage, status, error, stop } = useChat<ChatMessage>({
+  const { messages, sendMessage, status, error, stop ,addToolResult} = useChat<ChatMessage>({
     transport: new DefaultChatTransport({
       api: "/api/client-side-tools",
     }),
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    async onToolCall({toolCall}){
+      if (toolCall.dynamic){
+        return;
+      }
+      switch (toolCall.toolName){
+        case "changeBackground":
+          const {imageUrl, backgroundPrompt} = toolCall.input;
+
+          const transformation = `e-changebg-prompt-${backgroundPrompt}`;
+          const transformedUrl = buildTransformationUrl(
+            imageUrl,
+            transformation
+          );
+          addToolResult({
+            tool: "changeBackground",
+            toolCallId: toolCall.toolCallId,
+            output: transformedUrl,
+          });
+          break;
+
+      }
+    }
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

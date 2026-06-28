@@ -62,6 +62,21 @@ const tools = {
       ],
     }),
   }),
+  changeBackground: tool({
+    description:"Replace image background with AI generated scenes based on text prompt",
+    inputSchema: z.object({
+      imageUrl: z.string().describe("URL of the uploaded image"),
+      backgroundPrompt: z.string().describe(`Description of the new background (e.g.., "modern office, "tropical beach sunset","mountain landscape")`),
+    }),
+    outputSchema: z.string().describe("The transform image URL"),
+  }),
+  removeBackgrond: tool({
+    description: "Remove the background of an image",
+    inputSchema:z.object({
+      imageUrl: z.string().describe("URL of the uploaded image")
+    }),
+    outputSchema: z.string().describe("The transform image URL"),
+  }),
 };
 
 export type ChatTools = InferUITools<typeof tools>;
