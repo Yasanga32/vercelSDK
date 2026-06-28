@@ -1,14 +1,21 @@
+// app/ui/client-side-tools/page.tsx
 "use client";
 
 import { useState, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport ,lastAssistantMessageIsCompleteWithToolCalls} from "ai";
-import {Image} from "@imagekit/next";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from "ai";
+import { Image } from "@imagekit/next";
 import type { ChatMessage } from "@/app/api/client-side-tools/route";
 
-function buildTransformationUrl(baseUrl: string, transformation: string):string{
-  const seperator = baseUrl.includes("?") ? "&" : "?";
-  return `${baseUrl}${seperator}tr=${transformation}`;
+function buildTransformationUrl(
+  baseUrl: string,
+  transformation: string
+): string {
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}tr=${transformation}`;
 }
 
 export default function ClientSideToolsPage() {
@@ -16,35 +23,54 @@ export default function ClientSideToolsPage() {
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { messages, sendMessage, status, error, stop, addToolResult } =
+    useChat<ChatMessage>({
+      transport: new DefaultChatTransport({
+        api: "/api/client-side-tools",
+      }),
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+      async onToolCall({ toolCall }) {
+        if (toolCall.dynamic) {
+          return;
+        }
+        switch (toolCall.toolName) {
+          case "changeBackground":
+            {
+              const { imageUrl, backgroundPrompt } = toolCall.input;
 
-  const { messages, sendMessage, status, error, stop ,addToolResult} = useChat<ChatMessage>({
-    transport: new DefaultChatTransport({
-      api: "/api/client-side-tools",
-    }),
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    async onToolCall({toolCall}){
-      if (toolCall.dynamic){
-        return;
-      }
-      switch (toolCall.toolName){
-        case "changeBackground":
-          const {imageUrl, backgroundPrompt} = toolCall.input;
+              const transformation = `e-changebg-prompt-${backgroundPrompt}`;
+              const transformedUrl = buildTransformationUrl(
+                imageUrl,
+                transformation
+              );
 
-          const transformation = `e-changebg-prompt-${backgroundPrompt}`;
-          const transformedUrl = buildTransformationUrl(
-            imageUrl,
-            transformation
-          );
-          addToolResult({
-            tool: "changeBackground",
-            toolCallId: toolCall.toolCallId,
-            output: transformedUrl,
-          });
-          break;
+              addToolResult({
+                tool: "changeBackground",
+                toolCallId: toolCall.toolCallId,
+                output: transformedUrl,
+              });
+            }
+            break;
+          case "removeBackground":
+            {
+              const { imageUrl } = toolCall.input;
 
-      }
-    }
-  });
+              const transformation = `e-bgremove`;
+              const transformedUrl = buildTransformationUrl(
+                imageUrl,
+                transformation
+              );
+
+              addToolResult({
+                tool: "removeBackground",
+                toolCallId: toolCall.toolCallId,
+                output: transformedUrl,
+              });
+            }
+            break;
+        }
+      },
+    });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -90,7 +116,7 @@ export default function ClientSideToolsPage() {
                 }
                 if (part.mediaType?.startsWith("application/pdf")) {
                   return (
-                    <iframe //this tag for displaying pdf
+                    <iframe
                       key={`${message.id}-${index}`}
                       src={part.url}
                       width="500"
@@ -100,49 +126,31 @@ export default function ClientSideToolsPage() {
                   );
                 }
                 return null;
-
               case "tool-generateImage":
                 switch (part.state) {
                   case "input-streaming":
                     return (
                       <div
-                        key={`${message.id}-${index}`}
-                        className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5"
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
-
-                          <div>
-                            <p className="font-semibold text-blue-300">
-                              Preparing image generation...
-                            </p>
-
-                            <p className="text-sm text-zinc-400">
-                              Creating tool request...
-                            </p>
-                          </div>
+                        <div className="text-sm text-zinc-500">
+                          Receiving image generation request...
                         </div>
+                        <pre className="text-xs text-zinc-600 mt-1">
+                          {JSON.stringify(part.input, null, 2)}
+                        </pre>
                       </div>
                     );
 
                   case "input-available":
                     return (
                       <div
-                        key={`${message.id}-${index}`}
-                        className="mt-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5"
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
-
-                          <div>
-                            <p className="font-semibold text-yellow-300">
-                              🎨 Generating Image
-                            </p>
-
-                            <p className="mt-1 text-sm text-zinc-300">
-                              {part.input.prompt}
-                            </p>
-                          </div>
+                        <div className="text-sm text-zinc-400">
+                          Generating image for: {part.input.prompt}
                         </div>
                       </div>
                     );
@@ -150,47 +158,168 @@ export default function ClientSideToolsPage() {
                   case "output-available":
                     return (
                       <div
-                        key={`${message.id}-${index}`}
-                        className="mt-4 overflow-hidden rounded-2xl border border-green-500/30 bg-zinc-900"
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
                       >
-                        <div className="border-b border-green-500/20 bg-green-500/10 px-4 py-3">
-                          <p className="font-semibold text-green-300">
-                            ✅ Generated Image
-                          </p>
+                        <div>
+                          <Image
+                            urlEndpoint={
+                              process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
+                            }
+                            src={`${part.output}`}
+                            alt="Generated image"
+                            width={500}
+                            height={500}
+                          />
                         </div>
-
-                        <Image
-                          urlEndpoint={
-                            process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
-                          }
-                          src={part.output.image}
-                          alt="Generated image"
-                          width={1024}
-                          height={1024}
-                          className="w-full object-cover"
-                        />
                       </div>
                     );
 
                   case "output-error":
                     return (
                       <div
-                        key={`${message.id}-${index}`}
-                        className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-5"
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
                       >
-                        <p className="font-semibold text-red-400">
-                          ❌ Image generation failed
-                        </p>
-
-                        <p className="mt-2 text-sm text-red-300">
-                          {part.errorText}
-                        </p>
+                        <div className="text-sm text-red-400">
+                          Error: {part.errorText}
+                        </div>
                       </div>
                     );
 
                   default:
                     return null;
                 }
+              case "tool-changeBackground":
+                switch (part.state) {
+                  case "input-streaming":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div className="text-sm text-zinc-500">
+                          Receiving image transformation request...
+                        </div>
+                        <pre className="text-xs text-zinc-600 mt-1">
+                          {JSON.stringify(part.input, null, 2)}
+                        </pre>
+                      </div>
+                    );
+
+                  case "input-available":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div className="text-sm text-zinc-400">
+                          Changing background to: {part.input.backgroundPrompt}
+                        </div>
+                      </div>
+                    );
+
+                  case "output-available":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div>
+                          <Image
+                            urlEndpoint={
+                              "https://ik.imagekit.io/codevolutionbus/"
+                            }
+                            src={part.output}
+                            alt="Generated image"
+                            width={500}
+                            height={500}
+                          />
+                        </div>
+                      </div>
+                    );
+
+                  case "output-error":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div className="text-sm text-red-400">
+                          Error: {part.errorText}
+                        </div>
+                      </div>
+                    );
+
+                  default:
+                    return null;
+                }
+              case "tool-removeBackground":
+                switch (part.state) {
+                  case "input-streaming":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div className="text-sm text-zinc-500">
+                          Receiving image transformation request...
+                        </div>
+                        <pre className="text-xs text-zinc-600 mt-1">
+                          {JSON.stringify(part.input, null, 2)}
+                        </pre>
+                      </div>
+                    );
+
+                  case "input-available":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div className="text-sm text-zinc-400">
+                          Removing background...
+                        </div>
+                      </div>
+                    );
+
+                  case "output-available":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div>
+                          <Image
+                            urlEndpoint={
+                              "https://ik.imagekit.io/codevolutionbus/"
+                            }
+                            src={part.output}
+                            alt="Generated image"
+                            width={500}
+                            height={500}
+                          />
+                        </div>
+                      </div>
+                    );
+
+                  case "output-error":
+                    return (
+                      <div
+                        key={`${message.id}-getWeather-${index}`}
+                        className="bg-zinc-800/50 border border-zinc-700 p-2 rounded mt-1 mb-2"
+                      >
+                        <div className="text-sm text-red-400">
+                          Error: {part.errorText}
+                        </div>
+                      </div>
+                    );
+
+                  default:
+                    return null;
+                }
+              default:
+                return null;
             }
           })}
         </div>

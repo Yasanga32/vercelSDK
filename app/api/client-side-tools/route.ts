@@ -40,7 +40,7 @@ const tools = {
       const { image } = await generateImage({
         model: google.imageModel("imagen-4.0-generate-001"),
         prompt,
-        size: "1024x1024",
+        aspectRatio: "1:1",
       });
 
       // Upload generated image to ImageKit
@@ -70,7 +70,7 @@ const tools = {
     }),
     outputSchema: z.string().describe("The transform image URL"),
   }),
-  removeBackgrond: tool({
+  removeBackground: tool({
     description: "Remove the background of an image",
     inputSchema:z.object({
       imageUrl: z.string().describe("URL of the uploaded image")
