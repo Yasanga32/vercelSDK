@@ -167,6 +167,74 @@ export default function McpToolsChatPage() {
                       }
 
                     default:
+                      if (typeof part.type === "string" && part.type.startsWith("tool-")) {
+                        const toolName = part.type.replace("tool-", "");
+                        const anyPart = part as any;
+
+                        switch (anyPart.state) {
+                          case "input-streaming":
+                            return (
+                              <div
+                                key={`${message.id}-${index}`}
+                                className="mt-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4"
+                              >
+                                <p className="text-blue-300 font-medium">
+                                  Receiving request for {toolName}...
+                                </p>
+                                <pre className="mt-2 overflow-x-auto text-xs text-gray-300">
+                                  {JSON.stringify(anyPart.input, null, 2)}
+                                </pre>
+                              </div>
+                            );
+
+                          case "input-available":
+                            return (
+                              <div
+                                key={`${message.id}-${index}`}
+                                className="mt-3 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4"
+                              >
+                                <p className="text-yellow-300">
+                                  Fetching <span className="font-semibold">{toolName}</span>...
+                                </p>
+                                <pre className="mt-2 overflow-x-auto text-xs text-gray-300">
+                                  {JSON.stringify(anyPart.input, null, 2)}
+                                </pre>
+                              </div>
+                            );
+
+                          case "output-available":
+                            return (
+                              <div
+                                key={`${message.id}-${index}`}
+                                className="mt-3 rounded-2xl border border-green-500/30 bg-green-500/10 p-4"
+                              >
+                                <div className="text-green-300 font-semibold mb-2">
+                                  {toolName} Result
+                                </div>
+                                <pre className="text-white text-xs overflow-x-auto whitespace-pre-wrap break-words">
+                                  {typeof anyPart.output === "object"
+                                    ? JSON.stringify(anyPart.output, null, 2)
+                                    : String(anyPart.output)}
+                                </pre>
+                              </div>
+                            );
+
+                          case "output-error":
+                            return (
+                              <div
+                                key={`${message.id}-${index}`}
+                                className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4"
+                              >
+                                <div className="text-red-400">
+                                  Error in {toolName}: {anyPart.errorText}
+                                </div>
+                              </div>
+                            );
+
+                          default:
+                            return null;
+                        }
+                      }
                       return null;
                   }
                 })}
