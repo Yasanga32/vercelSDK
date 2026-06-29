@@ -166,7 +166,7 @@ export default function ClientSideToolsPage() {
                             urlEndpoint={
                               process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
                             }
-                            src={`${part.output}`}
+                            src={part.output.image}
                             alt="Generated image"
                             width={500}
                             height={500}
